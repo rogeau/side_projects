@@ -19,4 +19,4 @@ The goal was image-to-image gender translation using the CelebA-HQ dataset resiz
 
 The live webcam application implements and integrates CycleGAN within a dynamic pipeline that incorporates face detection with a Haar cascades classifier provided through cv2, CSRT tracker also provided via cv2, a personalized binary classifier model to label gender and finally CycleGAN for gender swapping.
 
-![Fake gender swap](webcam/example.gif)
+![Fake gender swap](webcam_example/example.gif)
