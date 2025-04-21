@@ -42,6 +42,6 @@ transformer = Decoder(vocab_size=len(codebook)).to(device)
 transformer.load_state_dict(torch.load('transformer.pth'))
 
 
-img_path = "test_img2/imm019_18A 2.JPG"
+img_path = "test_img/IMG_4651.jpg"
 
 test_on_image(img_path=img_path, transform=val_transform(), cnn=cnn, transformer=transformer, codebook=codebook)
