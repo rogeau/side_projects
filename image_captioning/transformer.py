@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 import torch.nn.functional as F
+import configs
 
 class Embedding(nn.Module):
-    def __init__(self, vocab_size, embed_dim=1024, max_length=50):
+    def __init__(self, vocab_size, embed_dim=configs.EMBED_DIM, max_length=configs.MAX_LENGTH):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, embed_dim)
         self.pos_embed = nn.Embedding(max_length, embed_dim)
@@ -15,7 +16,6 @@ class Embedding(nn.Module):
         pos_embeddings = self.pos_embed(positions)
         token_embeddings = self.token_embed(x)
         return token_embeddings + pos_embeddings 
-
 
 class MLP(nn.Module):
     def __init__(self, embed_dim, forward_expansion=4, dropout = 0.):
@@ -81,7 +81,7 @@ class Attention(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, vocab_size, embed_dim=1024, depth=12, dropout=0.):
+    def __init__(self, vocab_size, embed_dim=configs.EMBED_DIM, depth=configs.BLOCK_NUMBER, dropout=0.):
         super().__init__()
         self.vocab_size = vocab_size
 
@@ -113,7 +113,7 @@ class Decoder(nn.Module):
 
 
         logits = self.fc(x)
-        probs = self.softmax(x)
+        probs = self.softmax(logits)
 
         return logits, probs
 
@@ -122,5 +122,5 @@ if __name__ == "__main__":
 
     caption = torch.randint(0, 8000, (4, 50))
     decoder = Decoder(vocab_size = 8000)
-    x = decoder(caption, image)
+    x, _ = decoder(caption, image)
     print(x.shape)

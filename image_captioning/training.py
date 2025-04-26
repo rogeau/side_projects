@@ -1,5 +1,5 @@
 from torch.utils.data import random_split, DataLoader
-from dataset import Flickr8kDataset, val_transform, train_transform, build_vocab, detokenize
+from dataset import Flickr8kDataset, val_transform, train_transform, detokenize
 from torchvision.models import resnet50, ResNet50_Weights
 from resnet import TruncatedResNet
 from transformer import Decoder
@@ -9,38 +9,27 @@ import torch.optim as optim
 from tqdm import tqdm
 import itertools
 import json
+import configs
 
-epochs = 15
-device = "cuda" if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(21)
-
-full_dataset = Flickr8kDataset()
-# codebook = build_vocab(full_dataset)
-
-# with open('codebook.json', 'w') as f:
-#     json.dump(codebook, f)
 
 with open('codebook.json') as f:
     codebook = json.load(f)
 
+full_dataset = Flickr8kDataset()
 full_dataset.codebook = codebook
 
 train_size = int(0.9 * len(full_dataset))
 val_size = len(full_dataset) - train_size
 train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 
-# print(train_dataset.indices[0])
-# print(full_dataset.image_captions[25377])
-
 train_dataset.dataset.transform = train_transform()
 val_dataset.dataset.transform = val_transform()
 
 pretrained_whole_resnet = resnet50(weights=ResNet50_Weights.DEFAULT)
-cnn = TruncatedResNet(pretrained_whole_resnet).to(device)
-#cnn.load_state_dict(torch.load('cnn.pth'))
+cnn = TruncatedResNet(pretrained_whole_resnet).to(configs.DEVICE)
 
-transformer = Decoder(vocab_size=len(codebook)).to(device)
-#transformer.load_state_dict(torch.load('transformer.pth'))
+transformer = Decoder(vocab_size=len(codebook)).to(configs.DEVICE)
 
 optimizer = optim.Adam(
     list(cnn.parameters()) + list(transformer.parameters()), 
@@ -49,7 +38,7 @@ optimizer = optim.Adam(
 )
 
 
-for epoch in range(epochs):
+for epoch in range(configs.EPOCHS):
 
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     #train_loader = itertools.islice(train_loader, 5)
@@ -64,10 +53,10 @@ for epoch in range(epochs):
 
     with torch.no_grad():
         image, caption, mask, idx = next(iter(val_loader))
-        image, caption, mask = image.to(device), caption.to(device), mask.to(device)
+        image, caption, mask = image.to(configs.DEVICE), caption.to(configs.DEVICE), mask.to(configs.DEVICE)
         features = cnn(image)
         batch_size, seq_len = caption.size()
-        input_seq = torch.full((batch_size, 1), codebook['[SOS]'], dtype=torch.long, device=device)
+        input_seq = torch.full((batch_size, 1), codebook['[SOS]'], dtype=torch.long, device=configs.DEVICE)
 
         for t in range(1, seq_len):
             logits, _ = transformer(input_seq, features)
@@ -91,11 +80,11 @@ for epoch in range(epochs):
 
     train_loss = 0
 
-    loop_train = tqdm(train_loader, desc=f'Train epoch {epoch+1}/{epochs}', leave=True)
-    #loop_val = tqdm(val_loader, desc=f'Val epoch {epoch+1}/{epochs}', leave=True)
+    loop_train = tqdm(train_loader, desc=f'Train epoch {epoch+1}/{configs.EPOCHS}', leave=True)
+    loop_val = tqdm(val_loader, desc=f'Val epoch {epoch+1}/{configs.EPOCHS}', leave=True)
 
     for image, caption, mask, _ in loop_train:
-        image, caption, mask = image.to(device), caption.to(device), mask.to(device)
+        image, caption, mask = image.to(configs.DEVICE), caption.to(configs.DEVICE), mask.to(configs.DEVICE)
         optimizer.zero_grad()
 
         caption_input = caption[:, :-1]
@@ -125,10 +114,10 @@ torch.save(cnn.state_dict(), 'cnn.pth')
 torch.save(transformer.state_dict(), 'transformer.pth')
 
         # for image, caption, mask in loop_val:
-        #     image, caption, mask = image.to(device), caption.to(device), mask.to(device)
+        #     image, caption, mask = image.to(configs.DEVICE), caption.to(configs.DEVICE), mask.to(configs.DEVICE)
         #     features = cnn(image)
         #     batch_size, seq_len = caption.size()
-        #     input_seq = torch.full((batch_size, 1), codebook['[SOS]'], dtype=torch.long, device=device)
+        #     input_seq = torch.full((batch_size, 1), codebook['[SOS]'], dtype=torch.long, configs.DEVICE=configs.DEVICE)
 
         #     for t in range(1, seq_len):
         #         logits, _ = transformer(input_seq, features)

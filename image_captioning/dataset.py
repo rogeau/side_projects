@@ -4,14 +4,10 @@ from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
 import torchvision.transforms.functional as F
-
-path_images = 'dataset/Images'
-path_captions = 'dataset/captions.txt'
-max_length = 50
-image_size = 224
+import configs
 
 class Flickr8kDataset(Dataset):
-    def __init__(self, caption_file = path_captions, img_dir = path_images, transform=None, codebook=None):
+    def __init__(self, caption_file = configs.PATH_CAPTIONS, img_dir = configs.PATH_IMG, transform=None, codebook=None):
         self.img_dir = img_dir
         self.image_captions = self._load_captions(caption_file)
         self.transform = transform
@@ -88,7 +84,7 @@ def detokenize(input_ids, codebook):
 
     return ' '.join(tokens)
 
-def resize_and_pad(image, target_size=image_size):
+def resize_and_pad(image, target_size=configs.IMG_SIZE):
     width, height = image.size
     scale = target_size / max(width, height)
     new_width = int(width * scale)
@@ -102,7 +98,7 @@ def resize_and_pad(image, target_size=image_size):
 
 def val_transform():
     return transforms.Compose([
-        transforms.Lambda(lambda img: resize_and_pad(img, target_size=image_size)),
+        transforms.Lambda(lambda img: resize_and_pad(img, target_size=configs.IMG_SIZE)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -110,7 +106,7 @@ def val_transform():
 
 def train_transform():
     return transforms.Compose([
-        transforms.Lambda(lambda img: resize_and_pad(img, target_size=image_size)),
+        transforms.Lambda(lambda img: resize_and_pad(img, target_size=configs.IMG_SIZE)),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
